@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Risk Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #f5f7fa;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .navbar {
+      background: linear-gradient(90deg, #003366, #00509e);
+    }
+    .navbar-brand, .nav-link, .navbar-text {
+      color: white !important;
+      font-weight: 500;
+    }
+    .dashboard-container {
+      margin-top: 40px;
+    }
+    .card {
+      border: none;
+      border-radius: 15px;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+    }
+    .risk-green { background-color: #c8e6c9; }
+    .risk-amber { background-color: #fff9c4; }
+    .risk-red { background-color: #ffcdd2; }
+    .btn-alert {
+      background: #dc3545;
+      color: white;
+      font-weight: 600;
+      border-radius: 10px;
+    }
+    .btn-alert:hover {
+      background: #b52a37;
+      color: white;
+    }
+    th {
+      background-color: #003366 !important;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg shadow-sm">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand" href="#">🎓 Student Risk Dashboard</a>
+      <div class="ms-auto d-flex align-items-center">
+        <span class="navbar-text me-3">Welcome, {{ teacher_name }}</span>
+        <a href="{{ url_for('logout') }}" class="btn btn-sm btn-light fw-semibold">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container dashboard-container">
+    <div class="card p-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0 text-primary">Overall Student Performance</h3>
+    <button id="send-alerts" class="btn btn-alert shadow-sm" onclick="sendAlerts()">
+      🚨 Send Alerts
+    </button>
+  </div>
+
+  <!-- 🔹 Risk Summary Cards -->
+  <div class="row text-center mb-4" id="summary-cards">
+    <div class="col-md-4 mb-3">
+      <div class="card border-success border-2 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title text-success fw-bold">Low Risk (Green)</h5>
+          <h2 id="count-green" class="fw-bold">0</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card border-warning border-2 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title text-warning fw-bold">Medium Risk (Amber)</h5>
+          <h2 id="count-amber" class="fw-bold">0</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card border-danger border-2 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title text-danger fw-bold">High Risk (Red)</h5>
+          <h2 id="count-red" class="fw-bold">0</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔹 Student Data Table -->
+  <div class="table-responsive">
+    <table class="table table-bordered align-middle text-center" id="students-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Exam Marks</th>
+          <th>Internal Marks</th>
+          <th>Attendance %</th>
+          <th>Risk Level</th>
+          <th>Reasons</th>
+          <th>Actionable Advice</th>
+        </tr>
+      </thead>
+      <tbody id="students-body">
+        <tr><td colspan="7" class="text-center py-4">Loading student data...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+  </div>
+
+  <footer class="text-center mt-4 mb-3 text-muted small">
+    © {{ teacher_name }} | Student Risk Analytics | 2025
+  </footer>
+
+  <script>
+    async function loadStudents() {
+  try {
+    const res = await fetch('/students');
+    const students = await res.json();
+    const tbody = document.getElementById('students-body');
+    tbody.innerHTML = '';
+
+    let green = 0, amber = 0, red = 0;
+
+    students.forEach(s => {
+      const row = document.createElement('tr');
+      const riskClass =
+        s.risk_level === 'Green' ? 'risk-green' :
+        s.risk_level === 'Amber' ? 'risk-amber' : 'risk-red';
+
+      row.classList.add(riskClass);
+      row.innerHTML = `
+        <td><strong>${s.Name || ''}</strong></td>
+        <td>${s['Exam Marks'] || ''}</td>
+        <td>${s['Internal Marks'] || ''}</td>
+        <td>${s['Attendance Percentage'] || ''}</td>
+        <td><span class="badge bg-${s.risk_level === 'Red' ? 'danger' : s.risk_level === 'Amber' ? 'warning text-dark' : 'success'}">${s.risk_level}</span></td>
+        <td>${(s.risk_reasons || []).join('<br>')}</td>
+        <td>${(s.actionable_advice || []).join('<br>')}</td>
+      `;
+      tbody.appendChild(row);
+
+      if (s.risk_level === 'Green') green++;
+      else if (s.risk_level === 'Amber') amber++;
+      else if (s.risk_level === 'Red') red++;
+    });
+
+    // Update summary counts
+    document.getElementById('count-green').innerText = green;
+    document.getElementById('count-amber').innerText = amber;
+    document.getElementById('count-red').innerText = red;
+  } catch (err) {
+    console.error('Error loading students:', err);
+  }
+}
+
+
+    async function sendAlerts() {
+      if (!confirm("Send SMS alerts to parents for Amber/Red students?")) return;
+      const btn = document.getElementById('send-alerts');
+      btn.disabled = true;
+      btn.innerText = "Sending...";
+      try {
+        const res = await fetch('/notify', { method: 'POST' });
+        const j = await res.json();
+        alert(`✅ Alerts sent!\nParents notified: ${j.parents_notified}\nFailed: ${j.failed.length}`);
+      } catch (err) {
+        alert("❌ Error sending alerts: " + err);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "🚨 Send Alerts";
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadStudents);
+    
+  </script>
+</body>
+</html>
