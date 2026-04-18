@@ -33,21 +33,28 @@ The dashboard applies the following rules to every student record:
 ```bash
 git clone [https://github.com/YOUR_USERNAME/student-risk-dashboard.git](https://github.com/YOUR_USERNAME/student-risk-dashboard.git)
 cd student-risk-dashboard
+```
 
 ### 2. Setup Virtual Environment
+```bash
 python3 -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
+```
 
 ### 3. Install Requirements
+```bash
 pip install -r requirements.txt
+```
 
 ### 4. Configuration (.env)
+```bash
 MONGO_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/
 TWILIO_SID=your_twilio_sid
 TWILIO_AUTH=your_twilio_auth_token
 TWILIO_FROM=your_twilio_phone_number
 SECRET_KEY=your_flask_secret_key
 SMS_MODE=mock  # Change to "twilio" for real SMS alerts
+```
 
 🖥️ Execution Flow
 
